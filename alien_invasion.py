@@ -28,6 +28,7 @@ class AlienInvasion:
             self._check_events()
             self.ship.update()
             self._update_bullets()
+            self._check_fleet_edges()
             self._update_aliens()
             self._update_screen_()
             self.clock.tick(60)
@@ -37,8 +38,10 @@ class AlienInvasion:
         self.bullets.update()
 
     def _update_aliens(self):
-        """Update the position of all aliens on the screen"""
+        """Update the position of all aliens on the screen and add new row if space available."""
         self.aliens.update()
+        if self._can_add_new_row():
+            self._create_fleet_row()
 
     def _check_events(self):
         for event in pygame.event.get():
@@ -97,6 +100,18 @@ class AlienInvasion:
         new_alien.rect.y = current_y
         self.aliens.add(new_alien)
 
+    def _check_fleet_edges(self):
+        for alien in self.aliens.sprites():
+            if alien.check_edges():
+                self._change_fleet_direction()
+                break
+
+    def _change_fleet_direction(self):
+        """Drop the entire fleet and change the fleet's direction"""
+        for alien in self.aliens.sprites():
+            alien.rect.y += self.settings.fleet_drop_speed
+        self.settings.fleet_direction*=-1
+
 
     def _update_screen_(self):
         """Update images to screen, and flip to the new screen"""
@@ -106,6 +121,29 @@ class AlienInvasion:
         self.ship.blitme()
         self.aliens.draw(self.screen)
         pygame.display.flip()
+
+    def _can_add_new_row(self):
+        """Return True if there's space at the top to add a new row."""
+        if not self.aliens:
+            return True  # No aliens, so yes
+        top_y = min(alien.rect.top for alien in self.aliens.sprites())
+        alien = Alien(self)
+        return top_y > 2 * alien.rect.height
+
+    def _create_fleet_row(self):
+        """Create a single new row of aliens above the current topmost row."""
+        alien = Alien(self)
+        alien_width, alien_height = alien.rect.size
+        current_x = alien_width
+        if self.aliens:
+            top_y = min(alien.rect.top for alien in self.aliens.sprites())
+            current_y = top_y - 2 * alien_height  # Place 2*height above the highest alien
+        else:
+            current_y = 2 * alien_height  # Start higher if there are no aliens
+
+        while current_x < (self.settings.screen_width - 2 * alien_width):
+            self._create_alien(current_x, current_y)
+            current_x += 2 * alien_width
 
 if __name__ == '__main__':
     # Make a game instance, and run the game.
