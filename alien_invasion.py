@@ -24,9 +24,9 @@ class AlienInvasion:
         pygame.display.set_caption("Alien Invasion")
         # Make the play button
         self.play_button = Button(self, "Start Game")
-        self.level_1_button = Button(self, "Level 1",y_offset=60)
-        self.level_2_button = Button(self,"Level 2", y_offset =120)
-        self.level_3_button = Button(self,"Level 3", y_offset= 180)
+        self.level_1_button = Button(self, "Easy",y_offset=60)
+        self.level_2_button = Button(self,"Hard", y_offset =120)
+        self.level_3_button = Button(self,"Difficult", y_offset= 180)
 
         #create an instance to store the game stats
         # create an instance for scorecard
@@ -102,26 +102,31 @@ class AlienInvasion:
     def _check_play_button(self, mouse_pos, key_clicked=None):
         """Start new game when the player presses start game button or selects a level"""
         level_map = {
-            self.play_button: (1.0,1.0),
-            self.level_1_button: (1.1,1.5),
-            self.level_2_button: (1.3,2),
-            self.level_3_button: (1.5,2.5),
+            self.play_button: (1.0,1.0,1.0),
+            self.level_1_button: (1.5,1.5,2),
+            self.level_2_button: (2,2,3),
+            self.level_3_button: (2.5,2.5,4),
         }
         # Handle mouse click
         for button, level_values in level_map.items():
             if button.rect.collidepoint(mouse_pos) and not self.game_active:
-                self._start_game(speed = level_values[0], level_bonus = level_values[1])
+                self._start_game(speed = level_values[0], level_bonus = level_values[1],
+                                 level =level_values[2])
                 return
         # Handle keyboard shortcut
         if key_clicked and not self.game_active:
-            self._start_game(1.0, 1.0)
+            self._start_game(1.0, 1.0,1)
 
-    def _start_game(self, speed, level_bonus):
+    def _start_game(self, speed, level_bonus, level):
         """Centralized logic to start the game with a given speed."""
         self.status.reset_stats()
         self.scorecard.show_score()
         self.settings.initialize_dynamic_settings(level_speed=speed, level_bonus= level_bonus)
         self.game_active = True
+        self.status.level = level
+        self.scorecard.prep_level()
+        self.scorecard.prep_ships()
+
         pygame.mouse.set_visible(False)
 
 
@@ -226,6 +231,9 @@ class AlienInvasion:
             self.bullets.empty()
             self._create_fleet()
             self.settings.increase_speed()
+            #Increase level
+            self.status.level+=1
+            self.scorecard.prep_level()
 
     def _ship_hit(self):
         """Respond to the ship getting hit by the aliens and decrement on ship"""
